@@ -13,8 +13,20 @@
 #     ('text2.txt'. 'hypotheses.')
 #   ]
 #
+import glob
+import fileinput
+from itertools import groupby
+import os
+
 def load_input(input_directory):
-    pass
+    filenames = glob.glob(input_directory + "/*.*")
+    sequence = []
+
+    with fileinput.input(files=filenames) as f:
+        for line in f: 
+            sequence.append((f.filename(), line))
+
+    return sequence    
 
 
 #
@@ -30,7 +42,11 @@ def load_input(input_directory):
 #   ]
 #
 def mapper(sequence):
-    pass
+    new_sequence = [
+        (word.lower().replace(".", "").replace(",", ""), 1) 
+        for _, line in sequence for word in line.split()] 
+    
+    return new_sequence
 
 
 #
@@ -45,9 +61,9 @@ def mapper(sequence):
 #   ]
 #
 def shuffle_and_sort(sequence):
-    pass
+    sequence = sorted(sequence, key=lambda x: x[0])
 
-
+    return sequence
 #
 # Escriba la función reducer, la cual recibe el resultado de shuffle_and_sort y
 # reduce los valores asociados a cada clave sumandolos. Como resultado, por
@@ -55,17 +71,22 @@ def shuffle_and_sort(sequence):
 # texto.
 #
 def reducer(sequence):
-    pass
+    new_sequence = []
 
+    for k, g in groupby(sequence, lambda x: x[0]):
+        key = k
+        value = sum([x[1] for x in g])
+        new_sequence.append((key, value))
 
+    return new_sequence
 #
 # Escriba la función create_ouptput_directory que recibe un nombre de directorio
 # y lo crea. Si el directorio existe, la función falla.
 #
 def create_ouptput_directory(output_directory):
-    pass
-
-
+    if os.path.isdir(output_directory):
+        raise Exception("El directorio ya existe")
+    os.mkdir(output_directory)
 #
 # Escriba la función save_output, la cual almacena en un archivo de texto llamado
 # part-00000 el resultado del reducer. El archivo debe ser guardado en el
@@ -75,22 +96,29 @@ def create_ouptput_directory(output_directory):
 # separados por un tabulador.
 #
 def save_output(output_directory, sequence):
-    pass
-
-
+    # concatenar con os el nombre del directorio y el nombre del archivo
+    filename = os.path.join(output_directory, "part-00000")
+    with open(filename, "w") as f:
+        for key, value in sequence:
+            f.write(f"{key}\t{value}\n")
 #
 # La siguiente función crea un archivo llamado _SUCCESS en el directorio
 # entregado como parámetro.
 #
 def create_marker(output_directory):
-    pass
-
-
+    with open(os.path.join(output_directory, "_SUCCESS"), "w") as f:
+        f.write("")
 #
 # Escriba la función job, la cual orquesta las funciones anteriores.
 #
 def job(input_directory, output_directory):
-    pass
+    sequence = load_input(input_directory)
+    sequence = mapper(sequence)
+    sequence= shuffle_and_sort(sequence)
+    sequence = reducer(sequence)
+    create_ouptput_directory(output_directory)
+    save_output(output_directory, sequence)
+    create_marker(output_directory)
 
 
 if __name__ == "__main__":
